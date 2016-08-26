@@ -9,18 +9,36 @@ res="854x480"
 bratvid="1024k"
 # bitrate of output audio
 brataud="192k"
-# mapping video and aurio channels in input stream
+# mapping video and audio channels in input stream
 map="-map 0:0 -map 0:1"
 # framerate of output video ( keep as in input stream )
 framerate=23.98
+mapintsub="n"
 # mapping subtitles channel in case of internal subtitles
 mapintsub="-map 0:2"
 
-# directory with input video files
+# directory with input video files (with finished slash)
 indir="/dog/old/dump/___/"
 
-# if internal subtitles? set to 'y'
-intsubs='n'
+# directory with subtitles files (with finished slash) or null string
+subsdir="RUS Sub [Dreamers Team]/"
+
+# portion for cut of begin of filename
+beginofname="begin\ of\ name\ "
+
+# portion for cut of end of filename
+endofname="\ end\ of\ name"
+
+# subtitles type
+substype='ass'
+#substype='srt'
+
+# videofile type
+videotype="mkv"
+
+# for convert 5.1 or higher sound to stereo
+force_stereo=""
+#force_stereo=" -ac 2 -af volume=4.0"
 
 # test render subtitles
 rendertest='n'
@@ -31,10 +49,12 @@ testattempt='n'
 #testattempt='-t 120'
 #testattempt='-ss 00:02:00 -t 120'
 
+debug_level=24
+
 oudir="/dog/old/vid/${prefix}/"
 wrkdir="/home/old/vid/"
 
-tempsubs="${wrkdir}temp.ass"
+tempsubs="${wrkdir}temp.${substype}"
 tempmp4="${wrkdir}temp.mp4"
 
 testimg="${wrkdir}img/test.png"
@@ -57,31 +77,38 @@ if [ "$testattempt" != 'n' ]; then
     timerange=$testattempt
 fi
 
-for FILE in *.mkv;
+for FILE in *.${videotype};
 do
     # cut the end of filename
-    oufile="${FILE%\ end\ of\ name.mkv}.mp4"
+    oufile="${FILE%${endofname}.${videotype}}.mp4"
     # cut the begin of filename
-    oufile="${prefix}${oufile#begin\ of\ name\ }"
-    # set name of subtitles file
-    assfile="RUS Subs/${FILE%mkv}ass"
+    oufile="${prefix}${oufile#${beginofname}}"
+
+    if [ -f "$tempsubs" ];then
+	rm -f "$tempsubs"
+    fi
 
     flt=' '
 
-    if [ $intsubs = 'n' ]; then
-	if [ -f "$assfile" ]; then
-	    cp "$assfile" $tempsubs
-	    flt="-vf ass=$tempsubs"
+    if [ $mapintsub = 'n' ];then
+	substitlefile="${subsdir}${FILE%${videotype}}${substype}"
+	if [ -f "$substitlefile" ]; then
+	    cp "$substitlefile" $tempsubs
 	fi
     else
-	export FFREPORT=file=${wrkdir}"${oufile%mp4}ass.log":level=24
+	export FFREPORT=file=${wrkdir}"${oufile%mp4}subs.log":level=$debug_level
 	${ffmpegbin} -hide_banner -y -i "$FILE" $mapintsub $tempsubs
-	if [ -f "$tempsubs" ]; then
+    fi
+
+    if [ -f "$tempsubs" ]; then
+	if [ ${substype} = 'ass' ];then
 	    flt="-vf ass=$tempsubs"
+	else
+	    flt="-vf subtitles=$tempsubs"
 	fi
     fi
 
-    export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=24
+    export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=$debug_level
 
     if [ $rendertest != 'n' ]; then
 	if [ "$testattempt" != 'n' ]; then
