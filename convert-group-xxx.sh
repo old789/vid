@@ -1,15 +1,17 @@
 #!/bin/sh
 
+prefix="xyz"
 res="854x480"
 bratvid="1024k"
 brataud="192k"
 framerate=23.98
 
-indir="/dog/old/dump/xyz/"
-oudir="/dog/old/vid/xyz/"
+indir="/dog/old/dump/___/"
+oudir="/dog/old/vid/${prefix}/"
+wrkdir="/home/old/vid/"
 
-tempsubs="/home/old/temp.ass"
-tempmp4="/home/old/temp.mp4"
+tempsubs="${wrkdir}temp.ass"
+tempmp4="${wrkdir}temp.mp4"
 
 if [ ! -d "${indir}" ]; then
     echo Input dir not ready
@@ -24,18 +26,21 @@ fi
 
 for FILE in *.mkv;
 do
+    # cut the end of filename
     oufile="${FILE%\ end\ of\ name.mkv}.mp4"
-    oufile="xyz${oufile#begin\ of\ name\ }"
+    # cut the begin of filename
+    oufile="${prefix}${oufile#begin\ of\ name\ }"
+
     flt=' '
     assfile="RUS Subs/${FILE%mkv}ass"
     if [ -f "$assfile" ]; then
 	cp "$assfile" $tempsubs
 	flt="-vf ass=$tempsubs"
     fi
-    export FFREPORT=file=/home/old/"${oufile%mp4}log":level=16
+    export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=24
     ffmpeg -hide_banner -report -y -i "$FILE" \
 	-map 0:0 -map 0:1 \
-	-s ${res} -c:v libx264 -preset medium -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
+	-s ${res} -c:v libx264 -preset slower -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
 	-movflags +faststart -threads 0 -g 12 -r ${framerate} \
 	$flt $tempmp4
 

@@ -1,12 +1,17 @@
 #!/bin/sh
 
+prefix="xyz"
 res="854x480"
 bratvid="1560k"
 brataud="192k"
 framerate=23.98
 
-indir="/dog/old/dump/xyz/"
-oudir="/dog/old/vid/xyz/"
+indir="/dog/old/dump/___/"
+oudir="/dog/old/vid/${prefix}/"
+wrkdir="/home/old/vid/"
+
+tempsubs="${wrkdir}temp.ass"
+tempmp4="${wrkdir}temp.mp4"
 
 if [ ! -d "${indir}" ]; then
     echo Input dir not ready
@@ -19,19 +24,27 @@ if [ ! -d ${oudir} ]; then
     mkdir -p ${oudir}
 fi
 
-cp "RUS Sub/xyz.ass" /home/old/temp.ass
-export FFREPORT=file=/home/old/xyz.log:level=16
-ffmpeg -hide_banner -report -y -i "xyz.mkv" \
- -map 0:0 -map 0:1 \
- -s ${res} -c:v libx264 -preset slower -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
- -movflags +faststart -threads 0 -g 25 -r ${framerate} \
- -vf "ass=/home/old/temp.ass" \
- /home/old/temp.mp4
+infile="xyz.mkv"
+oufile="${prefix}.mp4"
 
-if [ -f /home/old/temp.mp4 ];then
-    mv /home/old/temp.mp4  ${oudir}xyz.mp4
+cp "RUS Sub/xyz.ass" $tempsubs
+flt=' '
+if [ -f "$tempsubs" ]; then
+    flt="-vf ass=$tempsubs"
 fi
 
-if [ -f /home/old/temp.ass ];then
-    rm /home/old/temp.ass
+export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=24
+
+ffmpeg -hide_banner -report -y -i "$infile" \
+ -map 0:0 -map 0:1 \
+ -s ${res} -c:v libx264 -preset slower -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
+ -movflags +faststart -threads 0 -g 12 -r ${framerate} \
+ $flt $tempmp4
+
+if [ -f $tempmp4 ];then
+    mv $tempmp4  "${oudir}${oufile}"
+fi
+
+if [ -f $tempsubs ];then
+    rm $tempsubs
 fi
