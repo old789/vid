@@ -115,6 +115,8 @@ if [ "$testattempt" != 'n' ] || [ "$rendertest" != 'n' ]; then
     debug_level=32
 fi
 
+unset FFREPORT
+
 for FILE in "${indir}"*.${videotype};
 do
     infile=$(basename "$FILE")
@@ -169,8 +171,14 @@ do
 	else
 	    flt="-vf $fltsub"
 	fi
-	duration=`${ffmpegbin} -hide_banner -i "$FILE" 2>&1 | awk '/Duration/{print $2}' | sed 's/\,//g'`
-	${ffmpegbin} -hide_banner -loop 1 -y -i $testimg -t $duration \
+	duration=`${ffmpegbin} -hide_banner -i "$FILE" 2>&1 | awk '/Duration/{print $2}'`
+	duration=${duration//\,/}
+	if [ "x$duration" = 'x' ]; then
+	    echo Unknown duration
+	    exit 1
+	fi
+	export FFREPORT=file="${wrkdir}${baseoufile}render.log":level=$debug_level
+	${ffmpegbin} -hide_banner -report -loop 1 -y -i $testimg -t $duration \
 	    -c:v libx264 -preset ultrafast -b:v 100k -pix_fmt yuv420p -an -threads 0 \
 	    $flt $tempmp4
     else
@@ -203,6 +211,7 @@ do
 	    -movflags +faststart -threads 0 -g 12 -r ${framerate} \
 	    $flt $pass $tempmp4
     fi
+    unset FFREPORT
 
     if [ -f $tempmp4 ];then
 	if [ $rendertest != 'n' ]; then
