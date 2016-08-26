@@ -11,7 +11,10 @@ indir="/dog/old/dump/___/"
 oudir="/dog/old/vid/${prefix}/"
 wrkdir="/home/old/vid/"
 
-tempsubs="${wrkdir}temp.ass"
+substype='ass'
+#substype='srt'
+
+tempsubs="${wrkdir}temp.${substype}"
 tempmp4="${wrkdir}temp.mp4"
 
 testattempt="x"
@@ -34,10 +37,18 @@ fi
 infile="xyz.mkv"
 oufile="${prefix}.mp4"
 
-cp "RUS Sub/xyz.ass" $tempsubs
+#for internal subs
+#export FFREPORT=file=${wrkdir}"${oufile%mp4}sub.log":level=24
+#${ffmpegbin} -hide_banner -report -y -i "$infile" -map 0:4 $tempsubs
+#for external subs
+cp "RUS Subs/xyz.${substype}" $tempsubs
 flt=' '
 if [ -f "$tempsubs" ]; then
-    flt="-vf ass=$tempsubs"
+    if [ ${substype} = 'ass' ];then
+	flt="-vf ass=$tempsubs"
+    else
+	flt="-vf subtitles=$tempsubs"
+    fi
 fi
 
 export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=24
