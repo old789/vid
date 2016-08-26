@@ -1,13 +1,36 @@
 #!/bin/sh
 
 # source: 
-prefix="xyz"
-res="854x480"
-bratvid="1024k"
-brataud="192k"
-framerate=23.98
 
+prefix="xyz"
+# resolution of output video
+res="854x480"
+# bitrate of output video
+bratvid="1024k"
+# bitrate of output audio
+brataud="192k"
+# mapping video and aurio channels in input stream
+map="-map 0:0 -map 0:1"
+# framerate of output video ( keep as in input stream )
+framerate=23.98
+# mapping subtitles channel in case of internal subtitles
+mapintsub="-map 0:2"
+
+# directory with input video files
 indir="/dog/old/dump/___/"
+
+# if internal subtitles? set to 'y'
+intsubs='n'
+
+# test render subtitles
+rendertest='n'
+#rendertest='y'
+
+# test converting ( usually 120s )
+testattempt='n'
+#testattempt='-t 120'
+#testattempt='-ss 00:02:00 -t 120'
+
 oudir="/dog/old/vid/${prefix}/"
 wrkdir="/home/old/vid/"
 
@@ -15,13 +38,6 @@ tempsubs="${wrkdir}temp.ass"
 tempmp4="${wrkdir}temp.mp4"
 
 testimg="${wrkdir}img/test.png"
-
-testattempt='n'
-#testattempt='-t 120'
-#testattempt='-ss 00:02:00 -t 120'
-
-rendertest='n'
-#rendertest='y'
 
 ffmpegbin='ffmpeg'
 
@@ -51,9 +67,18 @@ do
     assfile="RUS Subs/${FILE%mkv}ass"
 
     flt=' '
-    if [ -f "$assfile" ]; then
-	cp "$assfile" $tempsubs
-	flt="-vf ass=$tempsubs"
+
+    if [ $intsubs = 'n' ]; then
+	if [ -f "$assfile" ]; then
+	    cp "$assfile" $tempsubs
+	    flt="-vf ass=$tempsubs"
+	fi
+    else
+	export FFREPORT=file=${wrkdir}"${oufile%mp4}ass.log":level=24
+	${ffmpegbin} -hide_banner -y -i "$FILE" $mapintsub $tempsubs
+	if [ -f "$tempsubs" ]; then
+	    flt="-vf ass=$tempsubs"
+	fi
     fi
 
     export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=24
@@ -73,7 +98,7 @@ do
 	    $flt $tempmp4
     else
 	${ffmpegbin} -hide_banner -report -y -i "$FILE" \
-	    -map 0:0 -map 0:1 $timerange \
+	    ${map} $timerange \
 	    -s ${res} -c:v libx264 -preset slow -b:v ${bratvid} -c:a libfdk_aac -b:a ${brataud} \
 	    -movflags +faststart -threads 0 -g 12 -r ${framerate} \
 	    $flt $tempmp4
