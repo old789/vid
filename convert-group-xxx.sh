@@ -38,7 +38,7 @@ brataud="192k"
 # mapping video and audio channels in input stream
 map="-map 0:0 -map 0:1"
 # framerate of output video ( keep as in input stream )
-framerate=23.98
+framerate='24000/1001'
 
 # mapping subtitles channel in case of internal subtitles
 mapintsub='n'
@@ -95,10 +95,12 @@ if [ ! -d "${indir}" ]; then
     exit
 fi
 
-cd "${indir}"
+if [ $(pwd)"/" != "${wrkdir}" ]; then
+    cd "${wrkdir}"
+fi
 
-if [ ! -d ${oudir} ]; then
-    mkdir -p ${oudir}
+if [ ! -d "${oudir}" ]; then
+    mkdir -p "${oudir}"
 fi
 
 timerange=' '
@@ -110,10 +112,11 @@ if [ "$testattempt" != 'n' ] || [ "$rendertest" != 'n' ]; then
     debug_level=32
 fi
 
-for FILE in *.${videotype};
+for FILE in "${indir}"*.${videotype};
 do
+    infile=$(basename "$FILE")
     # cut the end of filename
-    oufile="${FILE%${endofname}.${videotype}}.mp4"
+    oufile="${infile%${endofname}.${videotype}}.mp4"
     # cut the begin of filename
     oufile="${prefix}${season}${oufile#${beginofname}}"
 
@@ -126,7 +129,7 @@ do
 
     if [ ${substype} != 'n' ];then
 	if [ "$mapintsub" = 'n' ];then
-	    substitlefile="${subsdir}${FILE%${videotype}}${substype}"
+	    substitlefile="${indir}${subsdir}${infile%${videotype}}${substype}"
 	    if [ -f "$substitlefile" ]; then
 		cp "$substitlefile" $tempsubs
 	    fi
