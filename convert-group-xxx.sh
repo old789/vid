@@ -70,6 +70,9 @@ vfsuffix=''
 vfprefix=''
 #vfprefix="yadif=1:-1:0" # deinterlace input image
 
+# two pass encoding (y/n)
+twoPass='n'
+
 # ----- end of config  -----
 
 oudir="/dog/home/old/vid/${prefix}/"
@@ -126,6 +129,9 @@ do
 
     flt=''
     fltsub=''
+    pass=''
+    preset='slow'
+    baseoufile=${oufile%mp4} # for some reason
 
     if [ ${substype} != 'n' ];then
 	if [ "$mapintsub" = 'n' ];then
@@ -134,7 +140,7 @@ do
 		cp "$substitlefile" $tempsubs
 	    fi
 	else
-	    export FFREPORT=file=${wrkdir}"${oufile%mp4}subs.log":level=$debug_level
+	    export FFREPORT=file=${wrkdir}"${baseoufile}subs.log":level=$debug_level
 	    ${ffmpegbin} -hide_banner -y -i "$FILE" $mapintsub $tempsubs
 	fi
 
@@ -151,8 +157,6 @@ do
 	    fi
 	fi
     fi
-
-    export FFREPORT=file=${wrkdir}"${oufile%mp4}log":level=$debug_level
 
     if [ $rendertest != 'n' ]; then
 	if [ "$testattempt" != 'n' ]; then
@@ -179,23 +183,41 @@ do
 	if [ "x${vfsuffix}" != 'x' ]; then
 	    flt=$( MakeVfilter "$flt" "${vfsuffix}" )
 	fi
+	if [ "${twoPass}" != 'y' ]; then
+	    export FFREPORT=file="${wrkdir}${baseoufile}log":level=$debug_level
+	else
+	    export FFREPORT=file="${wrkdir}${baseoufile}pass1.log":level=$debug_level
+	    ${ffmpegbin} -hide_banner -report -y -i "${FILE}" \
+		$map $timerange \
+		-s ${res} -c:v libx264 -preset medium -b:v ${bratvid} -an \
+		-threads 0 -g 12 -r ${framerate} \
+		$flt -pass 1 -passlogfile ${baseoufile}ffmpeg2pass -f mp4 /dev/null || exit 1
+	    export FFREPORT=file="${wrkdir}${baseoufile}pass2.log":level=$debug_level
+	    pass="-pass 2 -passlogfile ${baseoufile}ffmpeg2pass"
+	    preset='slower'
+	fi
 	${ffmpegbin} -hide_banner -report -y -i "$FILE" \
 	    ${map} $timerange \
-	    -s ${res} -c:v libx264 -preset slow -b:v ${bratvid} -c:a libfdk_aac -b:a ${brataud} ${afilt} \
+	    -s ${res} -c:v libx264 -preset $preset -b:v ${bratvid} \
+	    -c:a libfdk_aac -b:a ${brataud} ${afilt} \
 	    -movflags +faststart -threads 0 -g 12 -r ${framerate} \
-	    $flt $tempmp4
+	    $flt $pass $tempmp4
     fi
 
     if [ -f $tempmp4 ];then
 	if [ $rendertest != 'n' ]; then
-	    rm $tempmp4
+	    rm -f $tempmp4
 	else
 	    mv $tempmp4  "${oudir}${oufile}"
 	fi
     fi
 
     if [ -f $tempsubs ];then
-	rm $tempsubs
+	rm -f $tempsubs
+    fi
+
+    if [ "${twoPass}" = 'y' ];then
+	rm -f "${baseoufile}ffmpeg2pass"*
     fi
 
     if [ "$testattempt" != 'n' ]; then
