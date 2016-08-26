@@ -33,7 +33,7 @@ do
 	flt="-vf ass=$tempsubs"
     fi
     export FFREPORT=file=/home/old/"${oufile%mp4}log":level=16
-    ffmpeg -report -y -i "$FILE" \
+    ffmpeg -hide_banner -report -y -i "$FILE" \
 	-map 0:0 -map 0:1 \
 	-s ${res} -c:v libx264 -preset medium -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
 	-movflags +faststart -threads 0 -g 12 -r ${framerate} \
