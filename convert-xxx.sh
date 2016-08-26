@@ -1,19 +1,36 @@
 #!/bin/sh
 
-infile='/dog/old/dump/xyz.mp4'
-outfname="/dog/old/vid/xyz.mp4"
 res="854x480"
-bratvid="1024k"
-brataud="96k"
-framerate=25
+bratvid="1560k"
+brataud="192k"
+framerate=23.98
 
-ffmpeg -y -i "${infile}" \
+indir="/dog/old/dump/xyz/"
+oudir="/dog/old/vid/xyz/"
+
+if [ ! -d "${indir}" ]; then
+    echo Input dir not ready
+    exit
+fi
+
+cd "${indir}"
+
+if [ ! -d ${oudir} ]; then
+    mkdir -p ${oudir}
+fi
+
+cp "RUS Sub/xyz.ass" /home/old/temp.ass
+ffmpeg -y -i "xyz.mkv" \
+ -map 0:0 -map 0:1 \
  -s ${res} -c:v libx264 -preset slower -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
  -movflags +faststart -threads 0 -g 25 -r ${framerate} \
- temp.mp4
+ -vf "ass=/home/old/temp.ass" \
+ /home/old/temp.mp4
 
-if [ -f temp.mp4 ];then
-    cp temp.mp4 ${outfname}.mp4
-    ffmpeg -y -i temp.mp4 -ss 00:00:05 -vframes 1 ${outfname}.jpg
-    rm temp.mp4
+if [ -f /home/old/temp.mp4 ];then
+    mv /home/old/temp.mp4  ${oudir}xyz.mp4
+fi
+
+if [ -f /home/old/temp.ass ];then
+    rm /home/old/temp.ass
 fi
