@@ -24,22 +24,22 @@ fi
 
 for FILE in *.mkv;
 do
+    oufile="${FILE%\ end\ of\ name.mkv}.mp4"
+    oufile="xyz${oufile#begin\ of\ name\ }"
     flt=' '
     assfile="RUS Subs/${FILE%mkv}ass"
     if [ -f "$assfile" ]; then
 	cp "$assfile" $tempsubs
 	flt="-vf ass=$tempsubs"
     fi
-
-    ffmpeg -y -i "$FILE" \
+    export FFREPORT=file=/home/old/"${oufile%mp4}log":level=16
+    ffmpeg -report -y -i "$FILE" \
 	-map 0:0 -map 0:1 \
 	-s ${res} -c:v libx264 -preset medium -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
 	-movflags +faststart -threads 0 -g 12 -r ${framerate} \
 	$flt $tempmp4
 
     if [ -f $tempmp4 ];then
-	oufile="${FILE%\ end\ of\ name.mkv}.mp4"
-	oufile="xyz${oufile#begin\ of\ name\ }"
 	mv $tempmp4 "${oudir}${oufile}"
     fi
 

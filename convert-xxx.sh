@@ -20,7 +20,8 @@ if [ ! -d ${oudir} ]; then
 fi
 
 cp "RUS Sub/xyz.ass" /home/old/temp.ass
-ffmpeg -y -i "xyz.mkv" \
+export FFREPORT=file=/home/old/xyz.log:level=16
+ffmpeg -report -y -i "xyz.mkv" \
  -map 0:0 -map 0:1 \
  -s ${res} -c:v libx264 -preset slower -b:v ${bratvid} -c:a libfaac -b:a ${brataud} \
  -movflags +faststart -threads 0 -g 25 -r ${framerate} \
